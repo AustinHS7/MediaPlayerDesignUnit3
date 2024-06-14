@@ -1,0 +1,76 @@
+Final Code:
+import board
+import digitalio
+import audioio
+import displayio
+from adafruit_display_shapes.rect import Rect
+from adafruit_display_text.label import Label
+import os
+
+# Initialize display
+display = board.DISPLAY
+
+# Initialize buttons
+button_a = digitalio.DigitalInOut(board.BUTTON_A)
+button_a.switch_to_input(pull=digitalio.Pull.DOWN)
+
+button_b = digitalio.DigitalInOut(board.BUTTON_B)
+button_b.switch_to_input(pull=digitalio.Pull.DOWN)
+
+button_c = digitalio.DigitalInOut(board.BUTTON_C)
+button_c.switch_to_input(pull=digitalio.Pull.DOWN)
+
+# Function to list all music files in a directory
+def list_music_files(directory):
+    files = os.listdir(directory)
+    music_files = [f for f in files if f.endswith(".wav") or f.endswith(".mp3") or f.endswith(".ogg")]
+    return music_files
+
+# Function to play selected music
+def play_music(filename):
+    try:
+        wave_file = open(filename, "rb")
+        wave = audioio.WaveFile(wave_file)
+        audio.play(wave)
+        while audio.playing:
+            pass  # wait for the file to finish playing
+        audio.stop()
+        wave_file.close()
+    except Exception as e:
+        print("Error: ", e)
+
+# Main loop
+current_directory = "/music"  # Change this to match your music directory
+music_files = list_music_files(current_directory)
+selected_index = 0
+
+while True:
+    # Create display group
+    group = displayio.Group()
+
+    # Display current selected file
+    label_text = music_files[selected_index]
+    label = Label(displayio.BitmapFont(), text=label_text, color=0xFFFFFF, x=10, y=10)
+    group.append(label)
+
+    # Display selection rectangle/outline
+    rect = Rect(5, 5, display.width - 10, 20, fill=0x000000, outline=0xFFFFFF)
+    group.append(rect)
+
+    # Display group on screen
+    display.show(group)
+
+    # Button controls
+    if button_a.value:
+        play_music(os.path.join(current_directory, music_files[selected_index]))
+
+    if button_b.value:
+        selected_index = (selected_index - 1) % len(music_files)
+
+    if button_c.value:
+        selected_index = (selected_index + 1) % len(music_files)
+
+    # Wait to prevent spam
+    while button_a.value or button_b.value or button_c.value:
+        pass
+
